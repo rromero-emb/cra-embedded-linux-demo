@@ -1,11 +1,44 @@
-# Sesión 1: arranque por script (boot.scr). La firma de FIT se activa en la sesión 4.
-CONFIG_BOOTDELAY=1
-CONFIG_FIT=y
+# ======================= Sesión 4: arranque verificado ======================
+# El device tree de control lo entrega la etapa anterior (QEMU -dtb, como TF-A en hardware
+# real) y contiene la clave pública. u-boot.bin + ese device tree = firmware de confianza.
 
-# Sesión 3: el equipo arranca desde disco. Sin pila de red en U-Boot (superficie mínima;
-# elimina de raíz las CVE de NFS/TFTP/DHCP/PXE del bootloader).
+# Solo imágenes FIT con firma válida. Sin formato legacy ni arranque directo de un Image.
+CONFIG_FIT=y
+CONFIG_FIT_SIGNATURE=y
+CONFIG_RSA=y
+# CONFIG_LEGACY_IMAGE_FORMAT is not set
+# CONFIG_CMD_BOOTI is not set
+# CONFIG_CMD_BOOTZ is not set
+
+# Orden de arranque y parámetros del kernel COMPILADOS (no hay script editable en disco).
+# Sin bootstd: U-Boot no busca ni ejecuta boot.scr/extlinux.conf en el disco.
+# CONFIG_BOOTSTD_BOOTCOMMAND is not set
+# CONFIG_BOOTSTD_DEFAULTS is not set
+# CONFIG_BOOTSTD_MENU is not set
+# CONFIG_CMD_BOOTFLOW is not set
+# CONFIG_CMD_BOOTDEV is not set
+# CONFIG_CMD_BOOTMETH is not set
+CONFIG_USE_BOOTCOMMAND=y
+CONFIG_BOOTCOMMAND="echo CRA: verificando FIT firmado; load virtio 0:1 0x48000000 /boot/fitImage && bootm 0x48000000#conf-1; echo CRA: ARRANQUE RECHAZADO; poweroff"
+CONFIG_USE_BOOTARGS=y
+CONFIG_BOOTARGS="earlycon root=/dev/vda1 rootwait ro console=ttyAMA0 cra.boot=fit-signed"
+
+# Entorno solo en memoria: nada en disco/flash que un atacante pueda modificar.
+CONFIG_ENV_IS_NOWHERE=y
+# CONFIG_ENV_IS_IN_FLASH is not set
+
+# Sin pausa ni posibilidad de interrumpir el arranque; si falla, se apaga (no queda consola).
+CONFIG_BOOTDELAY=-2
+CONFIG_CMD_POWEROFF=y
+
+# KASLR: U-Boot inyecta una kaslr-seed nueva en cada arranque desde virtio-rng.
+CONFIG_DM_RNG=y
+CONFIG_VIRTIO_RNG=y
+
+# ======================= Sesión 3: superficie mínima ========================
+# Sin pila de red en U-Boot (arranca desde disco).
 CONFIG_NO_NET=y
 # CONFIG_NET is not set
-
 # Herramienta de cápsulas EFI: no se usa y en 2026.07 exige GnuTLS con PKCS#11
 # CONFIG_TOOLS_MKEFICAPSULE is not set
+

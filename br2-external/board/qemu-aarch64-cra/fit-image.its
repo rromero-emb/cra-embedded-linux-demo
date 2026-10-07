@@ -1,0 +1,53 @@
+/*
+ * FIT del sistema: kernel + device tree, con hash SHA-256 de cada pieza y la
+ * CONFIGURACIÓN firmada (RSA-4096). U-Boot exige la firma (required = "conf"):
+ * no arranca nada que no esté firmado por la clave integrada en su device tree.
+ * Firmar la configuración (y no cada imagen por separado) impide combinar piezas
+ * firmadas de versiones distintas ("mix-and-match").
+ */
+/dts-v1/;
+
+/ {
+	description = "CRA demo - kernel firmado";
+	#address-cells = <1>;
+
+	images {
+		kernel-1 {
+			description = "Linux kernel";
+			data = /incbin/("Image");
+			type = "kernel";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x40400000>;
+			entry = <0x40400000>;
+			hash-1 {
+				algo = "sha256";
+			};
+		};
+		fdt-1 {
+			description = "Device tree de la máquina";
+			data = /incbin/("qemu-cra.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash-1 {
+				algo = "sha256";
+			};
+		};
+	};
+
+	configurations {
+		default = "conf-1";
+		conf-1 {
+			description = "Arranque firmado";
+			kernel = "kernel-1";
+			fdt = "fdt-1";
+			signature-1 {
+				algo = "sha256,rsa4096";
+				key-name-hint = "cra-dev";
+				sign-images = "kernel", "fdt";
+			};
+		};
+	};
+};
