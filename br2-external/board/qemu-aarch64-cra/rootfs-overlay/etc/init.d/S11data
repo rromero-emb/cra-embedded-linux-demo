@@ -1,0 +1,9 @@
+#!/bin/sh
+# Prepara las particiones persistentes (montadas por fstab con mount -a)
+case "$1" in
+	start)
+		mkdir -p /data/rauc /data/dropbear /data/updates/incoming
+		chmod 700 /data/rauc /data/dropbear
+		chown 1000:1000 /data/updates/incoming && chmod 750 /data/updates/incoming
+		;;
+esac

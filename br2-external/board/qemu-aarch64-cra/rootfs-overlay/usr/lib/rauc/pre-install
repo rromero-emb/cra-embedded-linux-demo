@@ -1,0 +1,15 @@
+#!/bin/sh
+# Anti-rollback (CRA): no se instala una versión anterior a la que está funcionando.
+# Una versión antigua puede estar firmada y aun así tener vulnerabilidades conocidas.
+# RAUC no pasa la versión a los handlers del sistema (solo a los hooks del paquete), así que
+# se lee del manifiesto del paquete montado (ya verificado por firma y dm-verity).
+. /usr/lib/os-release
+MANIFEST="${RAUC_BUNDLE_MOUNT_POINT:-${RAUC_UPDATE_SOURCE:-}}/manifest.raucm"
+NEW="$(sed -n '/^\[update\]/,/^\[/s/^version=//p' "$MANIFEST" 2>/dev/null | head -1)"
+CUR="${IMAGE_BUILD:-0}"
+case "$NEW" in ''|*[!0-9]*) echo "RECHAZADO: versión del paquete no válida: '$NEW'" >&2; exit 1 ;; esac
+if [ "$NEW" -lt "$CUR" ]; then
+	echo "RECHAZADO: el paquete es la versión $NEW y el sistema ya tiene la $CUR (anti-rollback)" >&2
+	exit 1
+fi
+echo "Versión $NEW >= $CUR: se permite la instalación"

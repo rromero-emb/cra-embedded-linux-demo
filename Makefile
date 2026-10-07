@@ -1,7 +1,7 @@
 # Envoltorio de Buildroot para la demo CRA.
 #   make            -> descarga Buildroot (si falta), configura y compila
 #   make run        -> arranca la imagen en QEMU
-#   make test       -> pruebas automáticas (arranque, endurecimiento y arranque verificado)
+#   make test       -> pruebas automáticas (arranque, endurecimiento, arranque verificado y actualizaciones A/B)
 #   make ssh        -> entra en el equipo arrancado con `make run` (usuario admin)
 #   make sbom       -> SBOM CycloneDX del producto y de compilación (output/sbom/)
 #   make cve        -> vulnerabilidades (NVD) + VEX + informe; falla si hay críticas sin analizar
@@ -53,6 +53,7 @@ test:
 	python3 scripts/tests/test_boot.py $(O)/images
 	python3 scripts/tests/test_hardening.py $(O)
 	python3 scripts/tests/test_verified_boot.py $(O)
+	python3 scripts/tests/test_update.py $(O)
 
 ssh:
 	ssh -i keys/dev_ssh -p $${SSH_PORT:-2222} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null admin@localhost
@@ -67,7 +68,7 @@ KVULNS_DIR   ?= $(TOP)/kernel-vulns
 sbom: config
 	mkdir -p $(SBOM_DIR)
 	$(BR_MAKE) --no-print-directory -s show-info > $(SBOM_DIR)/show-info.json
-	scripts/sbom/product-show-info.py < $(SBOM_DIR)/show-info.json | $(CDX) > $(SBOM_DIR)/sbom.cdx.json
+	scripts/sbom/product-show-info.py $(O) < $(SBOM_DIR)/show-info.json | $(CDX) > $(SBOM_DIR)/sbom.cdx.json
 	scripts/sbom/add-runtime-components.py $(SBOM_DIR)/sbom.cdx.json $(O)/target $(O)/host
 	$(CDX) < $(SBOM_DIR)/show-info.json > $(SBOM_DIR)/sbom-build.cdx.json
 	@python3 -c "import json;f=lambda p:len(json.load(open(p))['components']);print('SBOM producto:',f('$(SBOM_DIR)/sbom.cdx.json'),'componentes | SBOM compilación:',f('$(SBOM_DIR)/sbom-build.cdx.json'))"

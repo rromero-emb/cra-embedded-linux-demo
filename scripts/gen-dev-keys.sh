@@ -20,3 +20,21 @@ if [ ! -f "$KEYS/fit/cra-dev.key" ]; then
 	chmod 600 "$KEYS/fit/cra-dev.key"
 	echo "Clave de firma de arranque: $KEYS/fit/cra-dev.key"
 fi
+
+# PKI de actualizaciones (RAUC): CA de desarrollo + certificado de firma emitido por ella.
+# El equipo solo confía en la CA (keyring); los paquetes se firman con el certificado.
+R="$KEYS/rauc"
+mkdir -p "$R"
+if [ ! -f "$R/ca.key" ]; then
+	openssl req -batch -x509 -newkey rsa:4096 -nodes -days 3650 -sha256 \
+		-subj "/CN=CRA demo update CA (DEV)" -keyout "$R/ca.key" -out "$R/ca.crt" \
+		-addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign" 2>/dev/null
+	openssl req -batch -newkey rsa:4096 -nodes -sha256 -subj "/CN=CRA demo update signing (DEV)" \
+		-keyout "$R/signing.key" -out "$R/signing.csr" 2>/dev/null
+	printf 'basicConstraints=CA:FALSE\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=codeSigning\n' > "$R/ext.cnf"
+	openssl x509 -req -in "$R/signing.csr" -CA "$R/ca.crt" -CAkey "$R/ca.key" -CAcreateserial \
+		-days 1825 -sha256 -extfile "$R/ext.cnf" -out "$R/signing.crt" 2>/dev/null
+	rm -f "$R/signing.csr" "$R/ext.cnf"
+	chmod 600 "$R"/*.key
+	echo "PKI de actualizaciones: $R (ca.crt va al equipo como keyring)"
+fi

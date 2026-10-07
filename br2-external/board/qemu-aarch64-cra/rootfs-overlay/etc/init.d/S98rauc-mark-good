@@ -1,0 +1,5 @@
+#!/bin/sh
+# El sistema ha arrancado hasta aquí: el slot actual es bueno (repone sus intentos)
+case "$1" in
+	start) printf "Marking slot as good: "; rauc status mark-good >/dev/null 2>&1 && echo OK || echo FAIL ;;
+esac

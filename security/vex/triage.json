@@ -2,36 +2,64 @@
   "_doc": "Análisis manual de vulnerabilidades (VEX). Cada entrada justifica la decisión con evidencia verificable. Estados y justificaciones según CycloneDX 1.6. Tiene prioridad sobre el análisis automático del kernel. Revisar en cada versión.",
   "statements": [
     {
-      "id": "CVE-2026-29009", "component": "uboot",
-      "state": "not_affected", "justification": "code_not_present",
+      "id": "CVE-2026-29009",
+      "component": "uboot",
+      "state": "not_affected",
+      "justification": "code_not_present",
       "detail": "El desbordamiento está en nfs_readlink_reply() y requiere CONFIG_CMD_NFS. No está activado (output/build/uboot-*/.config) y no se compila net/nfs*.o. Además, desde la sesión 3 la red de U-Boot está desactivada por completo (uboot.fragment).",
-      "analyst": "Roberto Romero", "date": "2026-10-07"
+      "analyst": "Roberto Romero",
+      "date": "2026-10-07"
     },
     {
-      "id": "CVE-2026-5450", "component": "glibc",
-      "state": "not_affected", "justification": "code_not_reachable",
+      "id": "CVE-2026-5450",
+      "component": "glibc",
+      "state": "not_affected",
+      "justification": "code_not_reachable",
       "detail": "Solo se dispara al llamar a la familia scanf con %mc y anchura explícita > 1024. Ningún binario ni biblioteca del producto (busybox, dropbear, nft, libnftnl, libmnl) contiene cadenas de formato %m (comprobado con strings). Respuesta prevista: actualizar la toolchain cuando incluya glibc corregida.",
-      "response": ["update"],
-      "analyst": "Roberto Romero", "date": "2026-10-07"
+      "response": [
+        "update"
+      ],
+      "analyst": "Roberto Romero",
+      "date": "2026-10-07"
     },
     {
-      "id": "CVE-2026-43083", "component": "linux",
-      "state": "not_affected", "justification": "requires_configuration",
+      "id": "CVE-2026-43083",
+      "component": "linux",
+      "state": "not_affected",
+      "justification": "requires_configuration",
       "detail": "net/ipv6/ioam6.c se compila, pero el código vulnerable solo se ejecuta si IOAM está habilitado en la interfaz (net.ipv6.conf.*.ioam6_enabled, 0 por defecto, exthdrs.c) o mediante túneles IOAM (CONFIG_IPV6_IOAM6_LWTUNNEL y CONFIG_LWTUNNEL desactivados). El producto fija ioam6_enabled=0 en /etc/sysctl.d/90-cra-hardening.conf. Aún sin corrección en la rama 6.12: revisar en cada actualización del kernel.",
-      "response": ["workaround_available"],
-      "analyst": "Roberto Romero", "date": "2026-10-07"
+      "response": [
+        "workaround_available"
+      ],
+      "analyst": "Roberto Romero",
+      "date": "2026-10-07"
     },
     {
-      "id": "CVE-2026-64067", "component": "linux",
-      "state": "not_affected", "justification": "code_not_present",
+      "id": "CVE-2026-64067",
+      "component": "linux",
+      "state": "not_affected",
+      "justification": "code_not_present",
       "detail": "Afecta a netfs (fs/netfs/*). CONFIG_NETFS_SUPPORT no está activado y no hay ningún .o en fs/netfs. Solo aparece en el análisis automático porque la corrección también toca include/linux/list.h.",
-      "analyst": "Roberto Romero", "date": "2026-10-07"
+      "analyst": "Roberto Romero",
+      "date": "2026-10-07"
     },
     {
-      "id": "CVE-2026-64160", "component": "linux",
-      "state": "not_affected", "justification": "code_not_present",
+      "id": "CVE-2026-64160",
+      "component": "linux",
+      "state": "not_affected",
+      "justification": "code_not_present",
       "detail": "Afecta a netfs y a sus usuarios 9p, AFS y SMB/CIFS. Ninguno está compilado (CONFIG_NETFS_SUPPORT, CONFIG_9P_FS, CONFIG_AFS_FS, CONFIG_CIFS desactivados; 0 ficheros .o en fs/netfs). Aparece solo por cambios en cabeceras públicas.",
-      "analyst": "Roberto Romero", "date": "2026-10-07"
+      "analyst": "Roberto Romero",
+      "date": "2026-10-07"
+    },
+    {
+      "id": "CVE-2026-58016",
+      "component": "libglib2",
+      "state": "not_affected",
+      "justification": "code_not_reachable",
+      "detail": "El fallo está en g_dbus_node_info_new_for_xml() (análisis de XML de introspección D-Bus). RAUC se compila sin D-Bus y no llama a esa función; el único programa que la llamaba (/usr/bin/gdbus) se elimina en post-build junto al resto de utilidades de GLib. Comprobado con readelf --dyn-syms sobre todos los ficheros de la imagen: ninguno la importa.",
+      "analyst": "Roberto Romero",
+      "date": "2026-10-07"
     }
   ]
 }
