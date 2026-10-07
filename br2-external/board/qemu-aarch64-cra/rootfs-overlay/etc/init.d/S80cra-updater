@@ -1,0 +1,5 @@
+#!/bin/sh
+case "$1" in
+	start) printf "Starting cra-updater: "; start-stop-daemon -S -b -m -p /var/run/cra-updater.pid -x /usr/sbin/cra-updater && echo OK ;;
+	stop) start-stop-daemon -K -p /var/run/cra-updater.pid ;;
+esac

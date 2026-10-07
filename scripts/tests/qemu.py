@@ -30,20 +30,31 @@ class Qemu:
         self.proc.kill()
         self.proc.wait()
 
-    def wait_for(self, ok=BOOT_OK, fail=BOOT_FAIL, timeout=240):
-        """Devuelve True si aparece `ok`, False si aparece un fallo o QEMU termina, None si timeout."""
+    def mark(self):
+        """Posición actual del log: para esperar solo a lo que aparezca a partir de ahora."""
+        self._read()
+        return len(self.log)
+
+    def _read(self):
+        chunk = self.proc.stdout.read() or b""
+        if chunk:
+            text = chunk.decode(errors="replace")
+            self.log += text
+            if self.echo:
+                sys.stdout.write(text)
+                sys.stdout.flush()
+        return bool(chunk)
+
+    def wait_for(self, ok=BOOT_OK, fail=BOOT_FAIL, timeout=240, since=0):
+        """Devuelve True si aparece `ok`, False si aparece un fallo o QEMU termina, None si timeout.
+        Solo mira el log a partir de la posición `since` (ver mark())."""
         start = time.time()
         while time.time() - start < timeout:
-            chunk = self.proc.stdout.read() or b""
-            if chunk:
-                text = chunk.decode(errors="replace")
-                self.log += text
-                if self.echo:
-                    sys.stdout.write(text)
-                    sys.stdout.flush()
-                if ok in self.log:
+            if self._read():
+                tail = self.log[since:]
+                if ok in tail:
                     return True
-                if any(f in self.log for f in fail):
+                if any(f in tail for f in fail):
                     return False
             elif self.proc.poll() is not None:
                 return False

@@ -12,19 +12,19 @@ Demostración reproducible de técnicas para cumplir requisitos técnicos del **
 | 2 | Endurecimiento (kernel, binarios, cortafuegos, SSH solo con clave, sysctl) | ✅ |
 | 3 | SBOM del producto, CVE (NVD + kernel CNA), VEX y puerta de calidad | ✅ |
 | 4 | Arranque verificado: FIT firmado (RSA-4096), U-Boot bloqueado, 4 ataques probados | ✅ |
-| 5 | Actualizaciones A/B firmadas (RAUC) | ⏳ |
+| 5 | Actualizaciones A/B firmadas (RAUC, verity), anti-rollback y vuelta atrás automática | ✅ |
 | 6 | dm-verity o cifrado de datos | ⏳ |
 | 7 | Documentación de proceso (Anexo I, CVD, soporte) | ⏳ |
 
 ## Uso rápido
 
-Requisitos (Debian/Ubuntu): `build-essential rsync bc cpio unzip file wget libssl-dev libgnutls28-dev python3 qemu-system-arm`
+Requisitos (Debian/Ubuntu): `build-essential rsync bc cpio unzip file wget libssl-dev libgnutls28-dev python3 qemu-system-arm xxd`
 
 ```sh
 make          # descarga Buildroot 2025.02.x (LTS) y compila
 make run      # arranca en QEMU (salir con Ctrl-a x)
 make ssh      # en otra terminal: entra como 'admin' con la clave de desarrollo
-make test     # arranque + 22 comprobaciones de endurecimiento + 4 ataques al arranque verificado
+make test     # arranque + endurecimiento + ataques al arranque verificado + actualizaciones A/B
 make sbom     # SBOM CycloneDX del producto y de compilación en output/sbom/
 make cve      # vulnerabilidades + VEX + informe (falla si hay críticas sin analizar)
 make hooks    # impide hacer commit de claves privadas
@@ -87,10 +87,29 @@ firmware de confianza                         disco (no confiable)
 - `make test` comprueba que se rechazan: 1 byte del kernel alterado · FIT firmado con otra clave del mismo nombre · FIT sin firma · kernel suelto.
 
 **Límites (honestos):**
+- Con A/B, un atacante con acceso al disco puede elegir entre los dos slots firmados (p. ej. el anterior). El anti-rollback de RAUC impide *instalar* versiones antiguas, pero no hay contador anti-rollback en el arranque (requiere almacenamiento seguro, p. ej. RPMB/OTP).
 - En QEMU la raíz de confianza es el firmware (`u-boot.bin` + DT de control, que QEMU entrega con `-dtb`). En hardware real, la ROM del SoC o TF-A verifica ese firmware con una clave grabada en OTP (paso irreversible).
 - El sistema de ficheros raíz aún **no** está verificado: lo cubrirá dm-verity (sesión 6).
 - Las claves son de desarrollo (`make keys`, nunca en git). En producción: HSM/PKI.
 - QEMU con `-bios` y ACPI sustituye el GPIO PL061 por ACPI GED: se usa `acpi=off` para que la máquina coincida con el device tree.
+
+## Actualizaciones A/B (sesión 5)
+
+```
+ disco:  p1 sistema A │ p2 sistema B │ p3 bootstate (FAT) │ p4 datos (ext4)
+                                         BOOT_ORDER=A B
+ U-Boot (entorno compilado) ──importa──► BOOT_A_LEFT=3     ◄── RAUC (backend propio)
+                                         BOOT_B_LEFT=3
+```
+
+- **RAUC** con paquetes en formato **verity** (se rechaza `plain`): firma CMS con una **CA propia** (el certificado de firma debe ser *Code Signing*) y cada bloque verificado con dm-verity al instalar.
+- **Anti-rollback**: un handler rechaza paquetes con versión inferior a la instalada (una versión antigua puede estar firmada y ser vulnerable).
+- **Vuelta atrás automática**: U-Boot descuenta un intento por arranque; el sistema se marca como bueno al final del arranque; si un slot agota sus 3 intentos o su FIT no verifica, U-Boot pasa al otro.
+- **El estado A/B no abre la puerta al arranque**: U-Boot no carga ningún entorno del disco; del fichero `bootstate.txt` solo importa `BOOT_ORDER`, `BOOT_A_LEFT` y `BOOT_B_LEFT` (`env import` con lista blanca). Orden de arranque y parámetros del kernel siguen compilados.
+- `init=/sbin/init` fijo: si falla, el kernel entra en pánico y reinicia (cuenta como intento fallido) en lugar de caer a `/bin/sh`.
+- Un agente (como un cliente OTA) instala lo que se deja en `/data/updates/incoming`: no importa quién lo deje, solo se instala lo firmado.
+
+`make test` comprueba: paquete de otra CA → rechazado · paquete antiguo → rechazado · paquete nuevo → arranca en B · paquete firmado pero roto → 3 intentos y vuelta atrás automática.
 
 ## Base técnica
 

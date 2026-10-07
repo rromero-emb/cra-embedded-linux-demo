@@ -10,24 +10,22 @@ CONFIG_RSA=y
 # CONFIG_CMD_BOOTI is not set
 # CONFIG_CMD_BOOTZ is not set
 
-# Orden de arranque y parámetros del kernel COMPILADOS (no hay script editable en disco).
-# Sin bootstd: U-Boot no busca ni ejecuta boot.scr/extlinux.conf en el disco.
+# Orden de arranque y parámetros del kernel COMPILADOS en el entorno por defecto
+# (board/qemu-aarch64-cra/uboot-env.txt, lógica A/B). Sin bootstd: U-Boot no busca
+# ni ejecuta boot.scr/extlinux.conf en el disco.
 # CONFIG_BOOTSTD_BOOTCOMMAND is not set
 # CONFIG_BOOTSTD_DEFAULTS is not set
 # CONFIG_BOOTSTD_MENU is not set
 # CONFIG_CMD_BOOTFLOW is not set
 # CONFIG_CMD_BOOTDEV is not set
 # CONFIG_CMD_BOOTMETH is not set
-CONFIG_USE_BOOTCOMMAND=y
-CONFIG_BOOTCOMMAND="echo CRA: verificando FIT firmado; load virtio 0:1 0x48000000 /boot/fitImage && bootm 0x48000000#conf-1; echo CRA: ARRANQUE RECHAZADO; poweroff"
-CONFIG_USE_BOOTARGS=y
-CONFIG_BOOTARGS="earlycon root=/dev/vda1 rootwait ro console=ttyAMA0 cra.boot=fit-signed"
 
 # Entorno solo en memoria: nada en disco/flash que un atacante pueda modificar.
+# (El estado A/B se importa con lista blanca desde bootstate.txt, ver uboot-env.txt)
 CONFIG_ENV_IS_NOWHERE=y
 # CONFIG_ENV_IS_IN_FLASH is not set
 
-# Sin pausa ni posibilidad de interrumpir el arranque; si falla, se apaga (no queda consola).
+# Sin pausa ni posibilidad de interrumpir el arranque; si ningún slot verifica, se apaga.
 CONFIG_BOOTDELAY=-2
 CONFIG_CMD_POWEROFF=y
 
@@ -42,3 +40,10 @@ CONFIG_NO_NET=y
 # Herramienta de cápsulas EFI: no se usa y en 2026.07 exige GnuTLS con PKCS#11
 # CONFIG_TOOLS_MKEFICAPSULE is not set
 
+
+# ======================= Sesión 5: arranque A/B ============================
+# Entorno por defecto desde fichero (lógica A/B). Ojo: U-Boot renombró la opción
+# (antes USE_DEFAULT_ENV_FILE) y la opción de Buildroot 2025.02 usa el nombre viejo,
+# que se ignora en silencio. Ruta relativa al árbol de U-Boot (output/build/uboot-*).
+CONFIG_ENV_USE_DEFAULT_ENV_TEXT_FILE=y
+CONFIG_ENV_DEFAULT_ENV_TEXT_FILE="../../../br2-external/board/qemu-aarch64-cra/uboot-env.txt"

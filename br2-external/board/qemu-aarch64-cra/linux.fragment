@@ -32,3 +32,20 @@ CONFIG_NF_LOG_SYSLOG=y
 # --- Yama: restringe ptrace entre procesos ---
 CONFIG_SECURITY=y
 CONFIG_SECURITY_YAMA=y
+
+# --- Sesión 5: actualizaciones A/B (RAUC) ---
+# Paquetes RAUC en formato verity: squashfs sobre loop, verificado con dm-verity
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_SQUASHFS=y
+CONFIG_SQUASHFS_ZLIB=y
+CONFIG_SQUASHFS_XZ=y
+CONFIG_MD=y
+CONFIG_BLK_DEV_DM=y
+CONFIG_DM_VERITY=y
+# dm-verity calcula SHA-256 de cada bloque: hace falta el algoritmo en el kernel
+CONFIG_CRYPTO_SHA256=y
+CONFIG_CRYPTO_SHA2_ARM64_CE=y
+# Partición bootstate (FAT) compartida con U-Boot
+CONFIG_VFAT_FS=y
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_NLS_ISO8859_1=y

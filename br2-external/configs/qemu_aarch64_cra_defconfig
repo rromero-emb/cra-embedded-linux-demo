@@ -23,13 +23,15 @@ BR2_ROOTFS_USERS_TABLES="$(BR2_EXTERNAL_CRA_DEMO_PATH)/board/qemu-aarch64-cra/us
 BR2_ROOTFS_DEVICE_TABLE="system/device_table.txt $(BR2_EXTERNAL_CRA_DEMO_PATH)/board/qemu-aarch64-cra/permissions.txt"
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_CRA_DEMO_PATH)/board/qemu-aarch64-cra/rootfs-overlay"
 BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_CRA_DEMO_PATH)/board/qemu-aarch64-cra/post-build.sh"
-BR2_ROOTFS_POST_IMAGE_SCRIPT="support/scripts/genimage.sh"
+BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_CRA_DEMO_PATH)/board/qemu-aarch64-cra/post-image.sh support/scripts/genimage.sh"
 BR2_ROOTFS_POST_SCRIPT_ARGS="-c $(BR2_EXTERNAL_CRA_DEMO_PATH)/board/qemu-aarch64-cra/genimage.cfg"
 
 # --- Servicios: solo SSH (dropbear) y cortafuegos ---
 BR2_PACKAGE_DROPBEAR=y
 # BR2_PACKAGE_DROPBEAR_CLIENT is not set
 BR2_PACKAGE_NFTABLES=y
+# Actualizaciones A/B firmadas (sesión 5)
+BR2_PACKAGE_RAUC=y
 
 # --- Kernel (6.12 LTS) --------------------------------------------------------
 BR2_LINUX_KERNEL=y
@@ -62,3 +64,7 @@ BR2_PACKAGE_HOST_UBOOT_TOOLS=y
 BR2_PACKAGE_HOST_UBOOT_TOOLS_FIT_SUPPORT=y
 BR2_PACKAGE_HOST_UBOOT_TOOLS_FIT_SIGNATURE_SUPPORT=y
 BR2_PACKAGE_HOST_DTC=y
+BR2_PACKAGE_HOST_RAUC=y
+BR2_PACKAGE_HOST_SQUASHFS=y
+BR2_PACKAGE_HOST_DOSFSTOOLS=y
+BR2_PACKAGE_HOST_MTOOLS=y

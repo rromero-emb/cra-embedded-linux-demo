@@ -21,7 +21,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential rsync bc cpio unzip file wget \
-            libssl-dev libgnutls28-dev python3 qemu-system-arm
+            libssl-dev libgnutls28-dev python3 qemu-system-arm xxd
 
       - name: Caché de descargas
         uses: actions/cache@v4
@@ -74,7 +74,7 @@ jobs:
         if: always()
         run: cat output/sbom/vulnerabilidades.md >> "$GITHUB_STEP_SUMMARY" || true
 
-      - name: Pruebas (arranque, endurecimiento y arranque verificado)
+      - name: Pruebas (arranque, endurecimiento, arranque verificado y actualizaciones A/B)
         if: always()
         run: |
           set -o pipefail
@@ -96,6 +96,7 @@ jobs:
             output/images/u-boot.bin
             output/images/u-boot-control.dtb
             output/images/fitImage
+            output/images/update.raucb
             output/images/disk.img
             output/sbom/sbom.cdx.json
             output/sbom/sbom-build.cdx.json

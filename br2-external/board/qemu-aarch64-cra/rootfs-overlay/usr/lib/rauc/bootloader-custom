@@ -1,0 +1,44 @@
+#!/bin/sh
+# Backend de arranque de RAUC: lee y escribe /bootstate/bootstate.txt, el mismo fichero
+# que U-Boot importa (solo BOOT_ORDER, BOOT_A_LEFT, BOOT_B_LEFT). Ver uboot-env.txt.
+set -eu
+STATE=/bootstate/bootstate.txt
+ATTEMPTS=3
+
+load() {
+	BOOT_ORDER="A B"; BOOT_A_LEFT=$ATTEMPTS; BOOT_B_LEFT=$ATTEMPTS
+	[ -f "$STATE" ] || return 0
+	while IFS='=' read -r k v; do
+		case "$k" in
+			BOOT_ORDER) BOOT_ORDER="$v" ;;
+			BOOT_A_LEFT) BOOT_A_LEFT="$v" ;;
+			BOOT_B_LEFT) BOOT_B_LEFT="$v" ;;
+		esac
+	done < "$STATE"
+}
+
+save() {
+	printf 'BOOT_ORDER=%s\nBOOT_A_LEFT=%s\nBOOT_B_LEFT=%s\n' "$BOOT_ORDER" "$BOOT_A_LEFT" "$BOOT_B_LEFT" > "$STATE.tmp"
+	mv "$STATE.tmp" "$STATE"
+	sync
+}
+
+left() { eval echo "\$BOOT_${1}_LEFT"; }
+other() { [ "$1" = "A" ] && echo B || echo A; }
+
+load
+case "${1:-}" in
+	get-primary)
+		for s in $BOOT_ORDER; do [ "$(left "$s")" -gt 0 ] && { echo "$s"; exit 0; }; done
+		exit 1 ;;
+	set-primary)
+		BOOT_ORDER="$2 $(other "$2")"; eval "BOOT_${2}_LEFT=$ATTEMPTS"; save ;;
+	get-state)
+		[ "$(left "$2")" -gt 0 ] && echo good || echo bad ;;
+	set-state)
+		if [ "$3" = "good" ]; then eval "BOOT_${2}_LEFT=$ATTEMPTS"; else eval "BOOT_${2}_LEFT=0"; fi
+		save ;;
+	get-current)
+		sed -n 's/.*rauc\.slot=\([AB]\).*/\1/p' /proc/cmdline ;;
+	*) echo "uso: $0 get-primary|set-primary S|get-state S|set-state S good|bad|get-current" >&2; exit 1 ;;
+esac

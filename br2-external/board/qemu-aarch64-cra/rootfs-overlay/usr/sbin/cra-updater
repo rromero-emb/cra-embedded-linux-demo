@@ -1,0 +1,25 @@
+#!/bin/sh
+# Agente de actualización (como haría un cliente OTA): instala los paquetes que aparecen en
+# /data/updates/incoming. Cualquiera con acceso puede dejarlos ahí: RAUC solo acepta los
+# firmados por la CA de actualizaciones, con dm-verity, compatibles y sin rollback.
+IN=/data/updates/incoming
+STATUS=/data/updates/status
+while true; do
+	for b in "$IN"/*.raucb; do
+		[ -f "$b" ] || continue
+		name=$(basename "$b")
+		mv "$b" /data/updates/installing.raucb
+		echo "INSTALANDO $name" > "$STATUS"
+		if rauc install /data/updates/installing.raucb > /data/updates/last.log 2>&1; then
+			echo "INSTALADO $name" > "$STATUS"
+			logger -t cra-updater "instalado $name, reiniciando"
+			rm -f /data/updates/installing.raucb; sync; reboot
+		else
+			echo "RECHAZADO $name" > "$STATUS"
+			logger -t cra-updater "rechazado $name"
+		fi
+		rm -f /data/updates/installing.raucb
+		chmod 644 "$STATUS" /data/updates/last.log
+	done
+	sleep 2
+done

@@ -1,0 +1,39 @@
+#  Entorno de U-Boot COMPILADO (no se carga ningún entorno del disco: ENV_IS_NOWHERE).
+#  Lógica A/B: del fichero bootstate.txt (partición 3, FAT) solo se importan
+#  BOOT_ORDER, BOOT_A_LEFT y BOOT_B_LEFT (lista blanca explícita en "env import").
+#  Cada arranque descuenta un intento; RAUC repone los intentos al marcar el slot
+#  como bueno. Si un slot se queda sin intentos o su FIT no verifica, se pasa al otro.
+#
+stdin=serial
+stdout=serial
+stderr=serial
+state_addr=0x47f00000
+fit_addr=0x48000000
+bootcmd=run cra_boot
+cra_boot=echo "CRA: arranque A/B"; \
+	setenv BOOT_ORDER "A B"; setenv BOOT_A_LEFT 3; setenv BOOT_B_LEFT 3; \
+	if fatload virtio 0:3 ${state_addr} bootstate.txt; then \
+		env import -t ${state_addr} ${filesize} BOOT_ORDER BOOT_A_LEFT BOOT_B_LEFT; \
+	fi; \
+	setenv slot; setenv part; \
+	for s in ${BOOT_ORDER}; do \
+		if test -z "${slot}"; then \
+			if test "${s}" = "A" && test ${BOOT_A_LEFT} -gt 0; then \
+				setexpr BOOT_A_LEFT ${BOOT_A_LEFT} - 1; setenv slot A; setenv part 1; \
+			elif test "${s}" = "B" && test ${BOOT_B_LEFT} -gt 0; then \
+				setexpr BOOT_B_LEFT ${BOOT_B_LEFT} - 1; setenv slot B; setenv part 2; \
+			fi; \
+		fi; \
+	done; \
+	if test -z "${slot}"; then \
+		echo "CRA: ARRANQUE RECHAZADO: ningun slot valido"; poweroff; \
+	fi; \
+	run cra_save; \
+	echo "CRA: slot ${slot} (intentos restantes A=${BOOT_A_LEFT} B=${BOOT_B_LEFT})"; \
+	setenv bootargs "earlycon root=/dev/vda${part} rootwait ro console=ttyAMA0 init=/sbin/init panic=5 rauc.slot=${slot} cra.boot=fit-signed"; \
+	echo "CRA: verificando FIT firmado"; \
+	load virtio 0:${part} ${fit_addr} /boot/fitImage && bootm ${fit_addr}#conf-1; \
+	echo "CRA: FIT del slot ${slot} rechazado, se marca como malo"; \
+	setenv BOOT_${slot}_LEFT 0; run cra_save; reset
+cra_save=env export -t ${state_addr} BOOT_ORDER BOOT_A_LEFT BOOT_B_LEFT; \
+	fatwrite virtio 0:3 ${state_addr} bootstate.txt ${filesize}

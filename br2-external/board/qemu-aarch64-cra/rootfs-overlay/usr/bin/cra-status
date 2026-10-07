@@ -24,6 +24,9 @@ echo "Cuenta root     : ${ROOT}"
 echo "SSH             : solo clave, sin root (dropbear)"
 echo "kptr_restrict   : $(sysctl_val kernel.kptr_restrict)  dmesg_restrict: $(sysctl_val kernel.dmesg_restrict)"
 grep -q "cra.boot=fit-signed" /proc/cmdline && echo "Arranque        : verificado (FIT firmado RSA-4096, clave pública en el firmware)" || echo "Arranque        : SIN VERIFICAR"
-echo "Actualizaciones : no configuradas (sesión 5)"
+SLOT=$(sed -n 's/.*rauc\.slot=\([AB]\).*/\1/p' /proc/cmdline)
+STATE=$(tr '\n' ' ' < /bootstate/bootstate.txt 2>/dev/null)
+echo "Slot activo     : ${SLOT:-?}  (build ${IMAGE_BUILD:-?})  estado A/B: ${STATE:-inicial (3 intentos)}"
+echo "Actualizaciones : RAUC, paquetes verity firmados (CA propia), anti-rollback"
 echo "=================================================="
 echo "CRA-DEMO: BOOT OK"
