@@ -74,7 +74,7 @@ jobs:
         if: always()
         run: cat output/sbom/vulnerabilidades.md >> "$GITHUB_STEP_SUMMARY" || true
 
-      - name: Pruebas (arranque y endurecimiento)
+      - name: Pruebas (arranque, endurecimiento y arranque verificado)
         if: always()
         run: make test
 
@@ -85,6 +85,8 @@ jobs:
           name: cra-demo-images
           path: |
             output/images/u-boot.bin
+            output/images/u-boot-control.dtb
+            output/images/fitImage
             output/images/disk.img
             output/sbom/sbom.cdx.json
             output/sbom/sbom-build.cdx.json

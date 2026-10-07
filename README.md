@@ -11,7 +11,7 @@ Demostración reproducible de técnicas para cumplir requisitos técnicos del **
 | 1 | Imagen base en QEMU, CI, SBOM básico | ✅ |
 | 2 | Endurecimiento (kernel, binarios, cortafuegos, SSH solo con clave, sysctl) | ✅ |
 | 3 | SBOM del producto, CVE (NVD + kernel CNA), VEX y puerta de calidad | ✅ |
-| 4 | Arranque verificado (FIT firmado) | ⏳ |
+| 4 | Arranque verificado: FIT firmado (RSA-4096), U-Boot bloqueado, 4 ataques probados | ✅ |
 | 5 | Actualizaciones A/B firmadas (RAUC) | ⏳ |
 | 6 | dm-verity o cifrado de datos | ⏳ |
 | 7 | Documentación de proceso (Anexo I, CVD, soporte) | ⏳ |
@@ -24,7 +24,7 @@ Requisitos (Debian/Ubuntu): `build-essential rsync bc cpio unzip file wget libss
 make          # descarga Buildroot 2025.02.x (LTS) y compila
 make run      # arranca en QEMU (salir con Ctrl-a x)
 make ssh      # en otra terminal: entra como 'admin' con la clave de desarrollo
-make test     # pruebas automáticas: arranque + 22 comprobaciones de endurecimiento
+make test     # arranque + 22 comprobaciones de endurecimiento + 4 ataques al arranque verificado
 make sbom     # SBOM CycloneDX del producto y de compilación en output/sbom/
 make cve      # vulnerabilidades + VEX + informe (falla si hay críticas sin analizar)
 make hooks    # impide hacer commit de claves privadas
@@ -67,6 +67,30 @@ Cómo se reducen las CVE del kernel a las que importan:
 - Análisis manual justificado: [`security/vex/triage.json`](security/vex/triage.json).
 - U-Boot actualizado a 2026.07 (firma GPG del mantenedor verificada) antes de confiar en la firma FIT: CVE-2026-46728 permitía saltársela en versiones anteriores a 2026.04. Pila de red de U-Boot eliminada.
 - CI semanal: vuelve a analizar aunque no cambie el código, porque aparecen CVE nuevas.
+
+## Arranque verificado (sesión 4)
+
+```
+firmware de confianza                         disco (no confiable)
+┌─────────────────────────────────┐          ┌──────────────────────────────┐
+│ u-boot.bin                      │  carga   │ /boot/fitImage               │
+│ + DT de control con la clave    │ ───────► │  kernel + device tree        │
+│   pública (required = "conf")   │ verifica │  hashes SHA-256              │
+│ orden de arranque y bootargs    │          │  configuración firmada       │
+│ compilados; sin consola         │          │  (RSA-4096)                  │
+└─────────────────────────────────┘          └──────────────────────────────┘
+```
+
+- La **configuración** del FIT está firmada (no cada imagen suelta): impide combinar piezas firmadas de versiones distintas.
+- U-Boot solo admite FIT firmados: sin formato legacy, sin `booti`/`bootz`, sin `bootflow` (no ejecuta `boot.scr` del disco), entorno solo en memoria, `bootdelay=-2` y **se apaga** si la verificación falla (no queda consola).
+- KASLR activo: U-Boot inyecta una `kaslr-seed` nueva en cada arranque desde `virtio-rng`.
+- `make test` comprueba que se rechazan: 1 byte del kernel alterado · FIT firmado con otra clave del mismo nombre · FIT sin firma · kernel suelto.
+
+**Límites (honestos):**
+- En QEMU la raíz de confianza es el firmware (`u-boot.bin` + DT de control, que QEMU entrega con `-dtb`). En hardware real, la ROM del SoC o TF-A verifica ese firmware con una clave grabada en OTP (paso irreversible).
+- El sistema de ficheros raíz aún **no** está verificado: lo cubrirá dm-verity (sesión 6).
+- Las claves son de desarrollo (`make keys`, nunca en git). En producción: HSM/PKI.
+- QEMU con `-bios` y ACPI sustituye el GPIO PL061 por ACPI GED: se usa `acpi=off` para que la máquina coincida con el device tree.
 
 ## Base técnica
 
