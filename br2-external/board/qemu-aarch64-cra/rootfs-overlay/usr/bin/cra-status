@@ -17,7 +17,9 @@ PORTS=$(netstat -tln 2>/dev/null | awk 'NR>2{n=split($4,a,":"); print a[n]}' | s
 echo "================ CRA demo: estado ================"
 echo "Imagen          : ${NAME} ${VERSION_ID} (${IMAGE_VERSION:-sin versión})"
 echo "Kernel          : $(uname -r)"
-echo "Rootfs          : $(awk '$2=="/"{print $1" ("$4")"}' /proc/mounts | head -1)"
+RO=$(awk '$2=="/"{split($4,o,","); print o[1]}' /proc/mounts | head -1)
+grep -q "dm-mod.create=.*verity" /proc/cmdline && V="dm-verity" || V="SIN dm-verity"
+echo "Rootfs          : ${V}, ${RO:-?} ($(awk '$2=="/"{print $1}' /proc/mounts | head -1))"
 echo "Cortafuegos     : ${FW}"
 echo "Puertos TCP     : ${PORTS:-ninguno}"
 echo "Cuenta root     : ${ROOT}"

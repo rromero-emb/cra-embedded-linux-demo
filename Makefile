@@ -1,7 +1,7 @@
 # Envoltorio de Buildroot para la demo CRA.
 #   make            -> descarga Buildroot (si falta), configura y compila
 #   make run        -> arranca la imagen en QEMU
-#   make test       -> pruebas automáticas (arranque, endurecimiento, arranque verificado y actualizaciones A/B)
+#   make test       -> pruebas automáticas (arranque, endurecimiento, arranque verificado, dm-verity y actualizaciones A/B)
 #   make ssh        -> entra en el equipo arrancado con `make run` (usuario admin)
 #   make sbom       -> SBOM CycloneDX del producto y de compilación (output/sbom/)
 #   make cve        -> vulnerabilidades (NVD) + VEX + informe; falla si hay críticas sin analizar
@@ -53,6 +53,7 @@ test:
 	python3 scripts/tests/test_boot.py $(O)/images
 	python3 scripts/tests/test_hardening.py $(O)
 	python3 scripts/tests/test_verified_boot.py $(O)
+	python3 scripts/tests/test_verity.py $(O)
 	python3 scripts/tests/test_update.py $(O)
 
 ssh:

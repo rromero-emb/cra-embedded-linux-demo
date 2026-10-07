@@ -3,12 +3,20 @@
 #  BOOT_ORDER, BOOT_A_LEFT y BOOT_B_LEFT (lista blanca explícita en "env import").
 #  Cada arranque descuenta un intento; RAUC repone los intentos al marcar el slot
 #  como bueno. Si un slot se queda sin intentos o su FIT no verifica, se pasa al otro.
+#  Sesión 6: el FIT se lee en bruto del slot y su device tree firmado trae el root hash de
+#  dm-verity; la raíz se monta a través de dm-verity (dm-mod.create), de solo lectura.
 #
 stdin=serial
 stdout=serial
 stderr=serial
 state_addr=0x47f00000
 fit_addr=0x48000000
+# Comilla doble para los parámetros del kernel: el intérprete de U-Boot elimina \" pero
+# no reinterpreta el contenido de una variable al expandirla.
+q="
+# FIT del slot: offset fijo de 136 MiB (0x44000 bloques de 512 B), máximo 24 MiB (0xC000 bloques)
+fit_blk=0x44000
+fit_cnt=0xC000
 bootcmd=run cra_boot
 cra_boot=echo "CRA: arranque A/B"; \
 	setenv BOOT_ORDER "A B"; setenv BOOT_A_LEFT 3; setenv BOOT_B_LEFT 3; \
@@ -30,9 +38,13 @@ cra_boot=echo "CRA: arranque A/B"; \
 	fi; \
 	run cra_save; \
 	echo "CRA: slot ${slot} (intentos restantes A=${BOOT_A_LEFT} B=${BOOT_B_LEFT})"; \
-	setenv bootargs "earlycon root=/dev/vda${part} rootwait ro console=ttyAMA0 init=/sbin/init panic=5 rauc.slot=${slot} cra.boot=fit-signed"; \
 	echo "CRA: verificando FIT firmado"; \
-	load virtio 0:${part} ${fit_addr} /boot/fitImage && bootm ${fit_addr}#conf-1; \
+	read virtio 0:${part} ${fit_addr} ${fit_blk} ${fit_cnt} && \
+	bootm start ${fit_addr}#conf-1 && bootm loados && bootm fdt && \
+	fdt get value cra_vsec /chosen cra,verity-sectors && \
+	fdt get value cra_verity /chosen cra,verity && \
+	setenv bootargs "earlycon console=ttyAMA0 init=/sbin/init panic=5 rauc.slot=${slot} cra.boot=fit-signed ro rootwait dm-mod.waitfor=/dev/vda${part} dm-mod.create=${q}vroot,,,ro,0 ${cra_vsec} verity 1 /dev/vda${part} /dev/vda${part} 4096 4096 ${cra_verity}${q} root=/dev/dm-0" && \
+	bootm prep && bootm go; \
 	echo "CRA: FIT del slot ${slot} rechazado, se marca como malo"; \
 	setenv BOOT_${slot}_LEFT 0; run cra_save; reset
 cra_save=env export -t ${state_addr} BOOT_ORDER BOOT_A_LEFT BOOT_B_LEFT; \

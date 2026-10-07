@@ -13,7 +13,7 @@ Demostración reproducible de técnicas para cumplir requisitos técnicos del **
 | 3 | SBOM del producto, CVE (NVD + kernel CNA), VEX y puerta de calidad | ✅ |
 | 4 | Arranque verificado: FIT firmado (RSA-4096), U-Boot bloqueado, 4 ataques probados | ✅ |
 | 5 | Actualizaciones A/B firmadas (RAUC, verity), anti-rollback y vuelta atrás automática | ✅ |
-| 6 | dm-verity o cifrado de datos | ⏳ |
+| 6 | Raíz de solo lectura verificada con dm-verity (root hash firmado en el FIT) | ✅ |
 | 7 | Documentación de proceso (Anexo I, CVD, soporte) | ⏳ |
 
 ## Uso rápido
@@ -24,7 +24,7 @@ Requisitos (Debian/Ubuntu): `build-essential rsync bc cpio unzip file wget libss
 make          # descarga Buildroot 2025.02.x (LTS) y compila
 make run      # arranca en QEMU (salir con Ctrl-a x)
 make ssh      # en otra terminal: entra como 'admin' con la clave de desarrollo
-make test     # arranque + endurecimiento + ataques al arranque verificado + actualizaciones A/B
+make test     # arranque + endurecimiento + ataques al arranque + dm-verity + actualizaciones A/B
 make sbom     # SBOM CycloneDX del producto y de compilación en output/sbom/
 make cve      # vulnerabilidades + VEX + informe (falla si hay críticas sin analizar)
 make hooks    # impide hacer commit de claves privadas
@@ -89,7 +89,6 @@ firmware de confianza                         disco (no confiable)
 **Límites (honestos):**
 - Con A/B, un atacante con acceso al disco puede elegir entre los dos slots firmados (p. ej. el anterior). El anti-rollback de RAUC impide *instalar* versiones antiguas, pero no hay contador anti-rollback en el arranque (requiere almacenamiento seguro, p. ej. RPMB/OTP).
 - En QEMU la raíz de confianza es el firmware (`u-boot.bin` + DT de control, que QEMU entrega con `-dtb`). En hardware real, la ROM del SoC o TF-A verifica ese firmware con una clave grabada en OTP (paso irreversible).
-- El sistema de ficheros raíz aún **no** está verificado: lo cubrirá dm-verity (sesión 6).
 - Las claves son de desarrollo (`make keys`, nunca en git). En producción: HSM/PKI.
 - QEMU con `-bios` y ACPI sustituye el GPIO PL061 por ACPI GED: se usa `acpi=off` para que la máquina coincida con el device tree.
 
@@ -110,6 +109,25 @@ firmware de confianza                         disco (no confiable)
 - Un agente (como un cliente OTA) instala lo que se deja en `/data/updates/incoming`: no importa quién lo deje, solo se instala lo firmado.
 
 `make test` comprueba: paquete de otra CA → rechazado · paquete antiguo → rechazado · paquete nuevo → arranca en B · paquete firmado pero roto → 3 intentos y vuelta atrás automática.
+
+## Raíz verificada con dm-verity (sesión 6)
+
+```
+slot (A o B, 160 MiB):
+0 ─── ext4 solo lectura (128 MiB) ─── 128 ─ árbol de hashes ─ 136 ─── FIT firmado ─── 160 MiB
+                                                                  │ kernel
+                                                                  │ device tree + /chosen/cra,verity
+                                                                  │   (root hash + salt, firmados)
+U-Boot: lee el FIT en bruto → verifica la firma → extrae el root hash → dm-mod.create=... root=/dev/dm-0
+```
+
+- El kernel verifica **cada bloque de la raíz al leerlo**. Un solo byte alterado → `data block N is corrupted` → reinicio (`restart_on_corruption`) → cuenta como intento fallido A/B → arranca el otro slot.
+- El root hash va dentro del device tree **firmado** del FIT; el FIT está fuera de la zona verificada para evitar la dependencia circular.
+- Sin initramfs: el kernel crea el dispositivo verity al arrancar (`CONFIG_DM_INIT`).
+- Raíz de solo lectura; lo que debe persistir (claves de host SSH, semilla aleatoria, estado de RAUC) va en `/data`.
+- RAUC instala el slot completo (ext4 + hashes + FIT) como imagen en bruto, dentro de un paquete también verity.
+
+`make test` altera 1 byte de `/bin/busybox` en el slot A (sin tocar el FIT): dm-verity lo detecta y el equipo vuelve solo al slot B.
 
 ## Base técnica
 

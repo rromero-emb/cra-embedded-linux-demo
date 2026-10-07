@@ -1,6 +1,14 @@
 """Utilidades comunes para arrancar la imagen en QEMU desde las pruebas."""
 import os, socket, subprocess, sys, time
 
+# Las pruebas usan las herramientas de host compiladas por Buildroot (mkimage, dtc, debugfs,
+# veritysetup...), no las del sistema: mkimage llama a "dtc" por el PATH y en CI no existe.
+_OUT = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 and os.path.isdir(os.path.join(sys.argv[1], "host")) \
+    else os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "output"))
+os.environ["PATH"] = os.pathsep.join([os.path.join(_OUT, "host", "bin"), os.path.join(_OUT, "host", "sbin"),
+                                      os.environ.get("PATH", "")])
+os.environ.setdefault("HOST_DIR", os.path.join(_OUT, "host"))
+
 RUN_QEMU = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "run-qemu.sh")
 BOOT_OK = "CRA-DEMO: BOOT OK"
 BOOT_FAIL = ("Kernel panic", "Bad Linux ARM64 Image", "Wrong Image", "Bad Data Hash",
