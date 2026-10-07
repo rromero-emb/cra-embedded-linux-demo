@@ -130,6 +130,8 @@ with Qemu(IMAGES, echo=False) as vm:
         check("cortafuegos: entrada y salida en drop", "entrada=drop salida=drop" in log,
               re.findall(r"Cortafuegos.*", log))
         check("cuenta root bloqueada", re.search(r"Cuenta root\s*: bloqueada", log) is not None)
+        check("raíz de solo lectura sobre dm-verity", re.search(r"Rootfs\s*: dm-verity, ro", log) is not None,
+              re.findall(r"Rootfs.*", log))
         ports = re.search(r"Puertos TCP\s*: (.*)", log)
         check("solo el puerto 22 escuchando", ports is not None and ports.group(1).split() == ["22"],
               ports.group(1) if ports else "?")

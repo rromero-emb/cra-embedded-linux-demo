@@ -13,3 +13,4 @@ __pycache__/
 /kernel-vulns/
 cve.log
 test.log
+upd.log

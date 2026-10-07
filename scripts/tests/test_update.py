@@ -65,12 +65,17 @@ def broken_rootfs():
 
 
 def bundle(name, version, keys=KEYS, rootfs=None):
+    """Paquete RAUC con una imagen de slot completa (ext4 + dm-verity + FIT firmado)."""
     d = os.path.join(work, "b-" + name)
     os.makedirs(d)
-    shutil.copyfile(rootfs or os.path.join(IMAGES, "rootfs.ext4"), os.path.join(d, "rootfs.ext4"))
+    board = os.path.join(ROOT, "br2-external", "board", "qemu-aarch64-cra")
+    run([os.path.join(ROOT, "scripts", "mk-slot-image.sh"), rootfs or os.path.join(IMAGES, "rootfs.ext4"),
+         os.path.join(IMAGES, "Image"), os.path.join(IMAGES, "qemu-cra.dtb"), os.path.join(board, "fit-image.its"),
+         os.path.join(ROOT, "keys", "fit"), d])
+    os.remove(os.path.join(d, "fitImage"))
     open(os.path.join(d, "manifest.raucm"), "w").write(
         f"[update]\ncompatible=cra-demo-qemu-aarch64\nversion={version}\n\n"
-        "[bundle]\nformat=verity\n\n[image.rootfs]\nfilename=rootfs.ext4\n")
+        "[bundle]\nformat=verity\n\n[image.rootfs]\nfilename=slot.img\n")
     out = os.path.join(work, name + ".raucb")
     run([RAUC, "bundle", f"--cert={keys}/signing.crt", f"--key={keys}/signing.key", d, out])
     return out

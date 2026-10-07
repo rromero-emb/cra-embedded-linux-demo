@@ -35,8 +35,11 @@ def partition(disk, n):
     return lba * 512, sectors * 512
 
 
+FIT_OFFSET = 136 * 1024 * 1024  # offset fijo del FIT dentro de cada slot (scripts/mk-slot-image.sh)
+
+
 def disk_with_fit(name, fit_path):
-    """Copia del disco con /boot/fitImage sustituido por `fit_path` en los DOS slots (A y B):
+    """Copia del disco con el FIT sustituido por `fit_path` en los DOS slots (A y B):
     si solo se alterase uno, U-Boot lo marcaría como malo y arrancaría el otro (correcto,
     pero entonces no se probaría el rechazo)."""
     d = os.path.join(work, name)
@@ -45,15 +48,12 @@ def disk_with_fit(name, fit_path):
         os.symlink(os.path.abspath(os.path.join(IMAGES, f)), os.path.join(d, f))
     disk = os.path.join(d, "disk.img")
     shutil.copyfile(os.path.join(IMAGES, "disk.img"), disk)
-    for n in (1, 2):
-        off, size = partition(disk, n)
-        part = os.path.join(work, f"{name}-p{n}.ext4")
-        with open(disk, "rb") as src, open(part, "wb") as dst:
-            src.seek(off); dst.write(src.read(size))
-        run([os.path.join(HOST, "sbin/debugfs"), "-w", "-R", "rm /boot/fitImage", part])
-        run([os.path.join(HOST, "sbin/debugfs"), "-w", "-R", f"write {fit_path} /boot/fitImage", part])
-        with open(part, "rb") as src, open(disk, "r+b") as dst:
-            dst.seek(off); dst.write(src.read())
+    data = open(fit_path, "rb").read()
+    with open(disk, "r+b") as dst:
+        for n in (1, 2):
+            off, _ = partition(disk, n)
+            dst.seek(off + FIT_OFFSET)
+            dst.write(data + b"\0" * 4096)  # borra la cabecera del FIT anterior si el nuevo es más corto
     return d
 
 
@@ -88,7 +88,7 @@ def expect_rejected(title, images_dir):
 
 try:
     # 1) Un byte del kernel cambiado dentro del FIT bueno
-    fit = open(os.path.join(IMAGES, "fitImage"), "rb").read()
+    fit = open(os.path.join(IMAGES, "fitImage"), "rb").read()  # FIT bueno (el mismo que va en el slot)
     data = bytearray(fit)
     data[len(data) // 2] ^= 0xFF
     p = os.path.join(work, "fit-tampered"); open(p, "wb").write(data)

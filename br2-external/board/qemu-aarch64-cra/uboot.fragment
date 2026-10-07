@@ -47,3 +47,6 @@ CONFIG_NO_NET=y
 # que se ignora en silencio. Ruta relativa al árbol de U-Boot (output/build/uboot-*).
 CONFIG_ENV_USE_DEFAULT_ENV_TEXT_FILE=y
 CONFIG_ENV_DEFAULT_ENV_TEXT_FILE="../../../br2-external/board/qemu-aarch64-cra/uboot-env.txt"
+
+# Sesión 6: lectura en bruto del FIT del slot
+CONFIG_CMD_READ=y

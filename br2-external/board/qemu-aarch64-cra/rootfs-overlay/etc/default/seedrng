@@ -1,0 +1,2 @@
+# Raíz de solo lectura: la semilla del generador aleatorio se guarda en /data
+SEEDRNG_ARGS="--seed-dir=/data/seedrng"

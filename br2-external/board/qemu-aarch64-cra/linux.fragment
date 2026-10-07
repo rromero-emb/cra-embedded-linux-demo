@@ -49,3 +49,6 @@ CONFIG_CRYPTO_SHA2_ARM64_CE=y
 CONFIG_VFAT_FS=y
 CONFIG_NLS_CODEPAGE_437=y
 CONFIG_NLS_ISO8859_1=y
+
+# --- Sesión 6: raíz verificada con dm-verity sin initramfs (dm-mod.create=) ---
+CONFIG_DM_INIT=y
