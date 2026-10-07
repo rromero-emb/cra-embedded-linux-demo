@@ -10,7 +10,7 @@ Demostración reproducible de técnicas para cumplir requisitos técnicos del **
 |---|---|---|
 | 1 | Imagen base en QEMU, CI, SBOM básico | ✅ |
 | 2 | Endurecimiento (kernel, binarios, cortafuegos, SSH solo con clave, sysctl) | ✅ |
-| 3 | SBOM + CVE + VEX | ⏳ |
+| 3 | SBOM del producto, CVE (NVD + kernel CNA), VEX y puerta de calidad | ✅ |
 | 4 | Arranque verificado (FIT firmado) | ⏳ |
 | 5 | Actualizaciones A/B firmadas (RAUC) | ⏳ |
 | 6 | dm-verity o cifrado de datos | ⏳ |
@@ -25,7 +25,8 @@ make          # descarga Buildroot 2025.02.x (LTS) y compila
 make run      # arranca en QEMU (salir con Ctrl-a x)
 make ssh      # en otra terminal: entra como 'admin' con la clave de desarrollo
 make test     # pruebas automáticas: arranque + 22 comprobaciones de endurecimiento
-make sbom     # SBOM CycloneDX en output/sbom/
+make sbom     # SBOM CycloneDX del producto y de compilación en output/sbom/
+make cve      # vulnerabilidades + VEX + informe (falla si hay críticas sin analizar)
 make hooks    # impide hacer commit de claves privadas
 ```
 
@@ -41,10 +42,36 @@ make hooks    # impide hacer commit de claves privadas
 
 `make test` lo verifica sobre la **imagen final** (permisos leídos con `debugfs`) y con el equipo arrancado (puertos, cortafuegos, SSH).
 
+## Vulnerabilidades y VEX (sesión 3)
+
+`make cve` produce en `output/sbom/`:
+
+| Fichero | Contenido |
+|---|---|
+| `sbom.cdx.json` | SBOM **del producto** (solo lo que va en el equipo, incluida glibc con su CPE) |
+| `sbom-build.cdx.json` | SBOM de compilación (herramientas de host) |
+| `sbom-vuln.cdx.json` | SBOM enriquecido con las CVE de NVD (`cve-check` de Buildroot) |
+| `vex.cdx.json` | Documento VEX: cada CVE con su estado y justificación |
+| `vulnerabilidades.md` | Informe legible y resultado de la puerta de calidad |
+
+Cómo se reducen las CVE del kernel a las que importan:
+
+| | Kernel 6.12.27 | Kernel 6.12.112 |
+|---|---|---|
+| CVE que reporta NVD | 3.201 | 360 |
+| No afectan: código no compilado (datos del kernel CNA + `.o` del build) | 2.531 | 169 |
+| Corregidas en la versión / introducidas después | 67 | 140 |
+| **Abiertas tras el análisis** | **589** | **~50** |
+
+- Análisis automático del kernel: [`scripts/sbom/kernel-vex.py`](scripts/sbom/kernel-vex.py) con [linux/security/vulns.git](https://git.kernel.org/pub/scm/linux/security/vulns.git).
+- Análisis manual justificado: [`security/vex/triage.json`](security/vex/triage.json).
+- U-Boot actualizado a 2026.07 (firma GPG del mantenedor verificada) antes de confiar en la firma FIT: CVE-2026-46728 permitía saltársela en versiones anteriores a 2026.04. Pila de red de U-Boot eliminada.
+- CI semanal: vuelve a analizar aunque no cambie el código, porque aparecen CVE nuevas.
+
 ## Base técnica
 
 - Buildroot **2025.02.x LTS** (soporte hasta marzo de 2028) como `BR2_EXTERNAL`
-- QEMU aarch64 `virt`, U-Boot como firmware, kernel Linux 6.12 LTS
+- QEMU aarch64 `virt`, U-Boot 2026.07 como firmware, kernel Linux 6.12.112 (LTS)
 - Toolchain externa Bootlin (glibc, estable)
 
 Plan completo: [`docs/PLAN.md`](docs/PLAN.md)

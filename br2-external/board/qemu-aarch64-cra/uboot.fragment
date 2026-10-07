@@ -1,3 +1,11 @@
 # Sesión 1: arranque por script (boot.scr). La firma de FIT se activa en la sesión 4.
 CONFIG_BOOTDELAY=1
 CONFIG_FIT=y
+
+# Sesión 3: el equipo arranca desde disco. Sin pila de red en U-Boot (superficie mínima;
+# elimina de raíz las CVE de NFS/TFTP/DHCP/PXE del bootloader).
+CONFIG_NO_NET=y
+# CONFIG_NET is not set
+
+# Herramienta de cápsulas EFI: no se usa y en 2026.07 exige GnuTLS con PKCS#11
+# CONFIG_TOOLS_MKEFICAPSULE is not set

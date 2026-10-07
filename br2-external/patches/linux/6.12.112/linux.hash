@@ -1,0 +1,5 @@
+# Tarball: https://cdn.kernel.org/pub/linux/kernel/v6.x/sha256sums.asc
+sha256  164dc9d1f6c93c61a15e1f071c48379b467f2b17c469cce7223471968208ed03  linux-6.12.112.tar.xz
+# Licencias (copiadas de buildroot/linux/linux.hash)
+sha256  fb5a425bd3b3cd6071a3a9aff9909a859e7c1158d54d32e07658398cd67eb6a0  COPYING
+sha256  f6b78c087c3ebdf0f3c13415070dd480a3f35d8fc76f3d02180a407c1c812f79  LICENSES/preferred/GPL-2.0
