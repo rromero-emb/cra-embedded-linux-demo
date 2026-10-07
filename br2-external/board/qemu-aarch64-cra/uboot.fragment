@@ -1,0 +1,3 @@
+# Sesión 1: arranque por script (boot.scr). La firma de FIT se activa en la sesión 4.
+CONFIG_BOOTDELAY=1
+CONFIG_FIT=y

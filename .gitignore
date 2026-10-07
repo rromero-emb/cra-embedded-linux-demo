@@ -1,0 +1,9 @@
+/buildroot/
+/output/
+/dl/
+# Nunca subir claves privadas
+/keys/
+*.key
+*-key.pem
+*.p12
+build.log

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Muestra el estado de seguridad del equipo. Se irá ampliando en cada sesión.
+. /usr/lib/os-release
+echo "================ CRA demo: estado ================"
+echo "Imagen        : ${NAME} ${VERSION_ID} (${IMAGE_VERSION:-sin versión})"
+echo "Kernel        : $(uname -r)"
+echo "Rootfs        : $(awk '$2=="/"{print $1" ("$4")"}' /proc/mounts | head -1)"
+echo "Arranque      : sin verificar (se activa en la sesión 4)"
+echo "Actualizaciones: no configuradas (sesión 5)"
+echo "=================================================="
+echo "CRA-DEMO: BOOT OK"
