@@ -1,2 +1,34 @@
-# Sesión 1: sin cambios funcionales. El endurecimiento del kernel llega en la sesión 2.
 CONFIG_LOCALVERSION="-cra"
+
+# --- Sesión 2: endurecimiento del kernel (CRA Anexo I: mitigar explotación, limitar superficie) ---
+CONFIG_RANDOMIZE_BASE=y
+CONFIG_HARDENED_USERCOPY=y
+CONFIG_INIT_ON_ALLOC_DEFAULT_ON=y
+CONFIG_SECURITY_DMESG_RESTRICT=y
+CONFIG_BPF_UNPRIV_DEFAULT_OFF=y
+CONFIG_SECCOMP=y
+CONFIG_STACKPROTECTOR_STRONG=y
+CONFIG_STRICT_KERNEL_RWX=y
+# Sin acceso a memoria física ni carga de kernels en caliente
+# CONFIG_DEVMEM is not set
+# CONFIG_KEXEC is not set
+# CONFIG_KEXEC_FILE is not set
+# CONFIG_PROC_KCORE is not set
+# CONFIG_MAGIC_SYSRQ is not set
+
+# --- Cortafuegos (nftables) ---
+CONFIG_NETFILTER=y
+CONFIG_NETFILTER_ADVANCED=y
+CONFIG_NF_CONNTRACK=y
+CONFIG_NF_TABLES=y
+CONFIG_NF_TABLES_INET=y
+CONFIG_NFT_CT=y
+CONFIG_NFT_LIMIT=y
+CONFIG_NFT_LOG=y
+CONFIG_NFT_REJECT=y
+CONFIG_NFT_COUNTER=y
+CONFIG_NF_LOG_SYSLOG=y
+
+# --- Yama: restringe ptrace entre procesos ---
+CONFIG_SECURITY=y
+CONFIG_SECURITY_YAMA=y

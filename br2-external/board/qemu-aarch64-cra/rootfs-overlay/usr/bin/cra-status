@@ -1,11 +1,29 @@
 #!/bin/sh
 # Muestra el estado de seguridad del equipo. Se irá ampliando en cada sesión.
 . /usr/lib/os-release
+
+sysctl_val() { cat "/proc/sys/$(echo "$1" | tr . /)" 2>/dev/null || echo "?"; }
+
+if [ "$(id -u)" = "0" ]; then
+	FW_IN=$(nft list chain inet filter input 2>/dev/null | sed -n 's/.*policy \([a-z]*\);.*/\1/p')
+	FW_OUT=$(nft list chain inet filter output 2>/dev/null | sed -n 's/.*policy \([a-z]*\);.*/\1/p')
+	FW="entrada=${FW_IN:-?} salida=${FW_OUT:-?}"
+	ROOT=$(awk -F: '$1=="root"{print ($2=="*"||$2 ~ /^!/)?"bloqueada":"CON CONTRASEÑA"}' /etc/shadow)
+else
+	FW="(ejecutar como root para verlo)"; ROOT="(ejecutar como root para verlo)"
+fi
+PORTS=$(netstat -tln 2>/dev/null | awk 'NR>2{n=split($4,a,":"); print a[n]}' | sort -un | tr '\n' ' ')
+
 echo "================ CRA demo: estado ================"
-echo "Imagen        : ${NAME} ${VERSION_ID} (${IMAGE_VERSION:-sin versión})"
-echo "Kernel        : $(uname -r)"
-echo "Rootfs        : $(awk '$2=="/"{print $1" ("$4")"}' /proc/mounts | head -1)"
-echo "Arranque      : sin verificar (se activa en la sesión 4)"
-echo "Actualizaciones: no configuradas (sesión 5)"
+echo "Imagen          : ${NAME} ${VERSION_ID} (${IMAGE_VERSION:-sin versión})"
+echo "Kernel          : $(uname -r)"
+echo "Rootfs          : $(awk '$2=="/"{print $1" ("$4")"}' /proc/mounts | head -1)"
+echo "Cortafuegos     : ${FW}"
+echo "Puertos TCP     : ${PORTS:-ninguno}"
+echo "Cuenta root     : ${ROOT}"
+echo "SSH             : solo clave, sin root (dropbear)"
+echo "kptr_restrict   : $(sysctl_val kernel.kptr_restrict)  dmesg_restrict: $(sysctl_val kernel.dmesg_restrict)"
+echo "Arranque        : sin verificar (se activa en la sesión 4)"
+echo "Actualizaciones : no configuradas (sesión 5)"
 echo "=================================================="
 echo "CRA-DEMO: BOOT OK"

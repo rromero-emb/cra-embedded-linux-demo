@@ -1,0 +1,7 @@
+# nombre tipo modo uid gid mayor menor inicio inc cuenta
+/home/admin/.ssh d 700 1000 1000 - - - - -
+/home/admin/.ssh/authorized_keys f 600 1000 1000 - - - - -
+/etc/nftables.conf f 600 0 0 - - - - -
+# Buildroot instala busybox con setuid de root (4755) para su/ping/passwd.
+# Root está bloqueado y no hacen falta: se quita el setuid (superficie mínima).
+/bin/busybox f 755 0 0 - - - - -

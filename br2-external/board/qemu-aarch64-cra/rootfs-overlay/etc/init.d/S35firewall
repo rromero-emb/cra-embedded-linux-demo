@@ -1,0 +1,13 @@
+#!/bin/sh
+# Carga el cortafuegos antes de levantar la red (S40network)
+case "$1" in
+	start)
+		printf "Starting firewall: "
+		/usr/sbin/nft -f /etc/nftables.conf && echo "OK" || echo "FAIL"
+		;;
+	stop)
+		printf "Stopping firewall: "
+		/usr/sbin/nft flush ruleset && echo "OK" || echo "FAIL"
+		;;
+	*) echo "Usage: $0 {start|stop}"; exit 1 ;;
+esac

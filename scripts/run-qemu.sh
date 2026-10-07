@@ -7,4 +7,4 @@ exec qemu-system-aarch64 \
 	-bios "${IMAGES}/u-boot.bin" \
 	-drive file="${IMAGES}/disk.img",if=none,format=raw,id=hd0,snapshot=on \
 	-device virtio-blk-device,drive=hd0 \
-	-netdev user,id=net0 -device virtio-net-device,netdev=net0
+	-netdev user,id=net0,hostfwd=tcp:127.0.0.1:${SSH_PORT:-2222}-:22 -device virtio-net-device,netdev=net0
