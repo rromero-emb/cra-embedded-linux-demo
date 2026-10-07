@@ -76,7 +76,16 @@ jobs:
 
       - name: Pruebas (arranque, endurecimiento y arranque verificado)
         if: always()
-        run: make test
+        run: |
+          set -o pipefail
+          make test 2>&1 | tee test.log
+
+      - name: Diagnóstico de pruebas (anotaciones públicas)
+        if: failure()
+        run: |
+          grep -aE "FAIL|Error|ERROR|error|panic|RECHAZADO|timeout|Traceback|No such|denied|qemu-system" test.log \
+            | grep -av "^\s*$" | tail -40 | sed 's/^/::error::/' || true
+          tail -60 test.log | sed 's/^/::warning::/' || true
 
       - name: Publicar artefactos
         if: always()
