@@ -1,7 +1,8 @@
 # Envoltorio de Buildroot para la demo CRA.
 #   make            -> descarga Buildroot (si falta), configura y compila
 #   make run        -> arranca la imagen en QEMU
-#   make test       -> prueba automática de arranque
+#   make test       -> pruebas automáticas (arranque y endurecimiento)
+#   make ssh        -> entra en el equipo arrancado con `make run` (usuario admin)
 #   make sbom       -> genera el SBOM CycloneDX (output/sbom/)
 #   make hooks      -> activa el hook que impide subir claves privadas
 
@@ -15,7 +16,7 @@ export BR2_DL_DIR ?= $(TOP)/dl
 VERSION      := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 BR_MAKE      := $(MAKE) -C $(BR_DIR) O=$(O) BR2_EXTERNAL=$(TOP)/br2-external
 
-.PHONY: all buildroot config build menuconfig savedefconfig run test sbom hooks clean distclean
+.PHONY: all keys buildroot config build menuconfig savedefconfig run test ssh sbom hooks clean distclean
 
 all: build
 
@@ -31,7 +32,10 @@ $(O)/.config: br2-external/configs/$(DEFCONFIG) | buildroot
 
 config: $(O)/.config
 
-build: config
+keys:
+	scripts/gen-dev-keys.sh
+
+build: config keys
 	$(BR_MAKE)
 
 menuconfig: config
@@ -45,6 +49,10 @@ run:
 
 test:
 	python3 scripts/tests/test_boot.py $(O)/images
+	python3 scripts/tests/test_hardening.py $(O)
+
+ssh:
+	ssh -i keys/dev_ssh -p $${SSH_PORT:-2222} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null admin@localhost
 
 sbom: config
 	mkdir -p $(O)/sbom

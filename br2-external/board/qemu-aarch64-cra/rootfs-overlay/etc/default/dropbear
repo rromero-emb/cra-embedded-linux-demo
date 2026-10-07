@@ -1,0 +1,3 @@
+# -s: sin contraseñas  -w: sin login de root  -g: sin contraseña para root
+# -T 3: máximo 3 intentos de autenticación  -I 600: cierra sesiones inactivas (10 min)
+DROPBEAR_ARGS="-s -w -g -T 3 -I 600"
