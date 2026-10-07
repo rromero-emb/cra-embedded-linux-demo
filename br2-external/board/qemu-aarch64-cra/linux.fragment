@@ -1,0 +1,2 @@
+# Sesión 1: sin cambios funcionales. El endurecimiento del kernel llega en la sesión 2.
+CONFIG_LOCALVERSION="-cra"

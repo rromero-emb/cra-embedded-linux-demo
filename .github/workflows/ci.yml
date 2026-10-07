@@ -1,0 +1,53 @@
+name: build-and-test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Dependencias de host
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential rsync bc cpio unzip file wget \
+            libssl-dev libgnutls28-dev python3 qemu-system-arm
+
+      - name: Caché de descargas
+        uses: actions/cache@v4
+        with:
+          path: dl
+          key: dl-${{ hashFiles('br2-external/configs/*_defconfig', 'Makefile') }}
+          restore-keys: dl-
+
+      - name: Caché de ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildroot-ccache
+          key: ccache-${{ github.sha }}
+          restore-keys: ccache-
+
+      - name: Compilar
+        run: make
+
+      - name: SBOM (CycloneDX)
+        run: make sbom
+
+      - name: Prueba de arranque en QEMU
+        run: make test
+
+      - name: Publicar artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: cra-demo-images
+          path: |
+            output/images/u-boot.bin
+            output/images/disk.img
+            output/sbom/sbom.cdx.json
