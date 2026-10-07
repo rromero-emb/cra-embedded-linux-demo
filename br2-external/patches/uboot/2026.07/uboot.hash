@@ -1,0 +1,4 @@
+# Tarball verificado con la firma GPG de Thomas Rini (F3CEA8743D60E0192F9B4C7A2BE2A0F50ABFE40A, vía WKD konsulko.com)
+sha256  78e8bfc382fe388f9b55aa1daf8c563522a037779b5d4c349d1415e381f1243e  u-boot-2026.07.tar.bz2
+# Licencia (copiada de buildroot/boot/uboot/uboot.hash)
+sha256  8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643  Licenses/gpl-2.0.txt

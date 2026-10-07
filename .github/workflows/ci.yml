@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  schedule:
+    # Vigilancia continua de vulnerabilidades (CRA Anexo I, parte II): cada lunes a las 06:00 UTC
+    - cron: "0 6 * * 1"
 
 jobs:
   build:
@@ -40,10 +43,43 @@ jobs:
       - name: SBOM (CycloneDX)
         run: make sbom
 
-      - name: Prueba de arranque en QEMU
+      - name: Semana actual (clave de caché de NVD)
+        id: week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Caché de NVD y de las CVE del kernel
+        uses: actions/cache@v4
+        with:
+          path: |
+            nvd
+            kernel-vulns
+          key: vulndb-${{ steps.week.outputs.week }}
+          restore-keys: vulndb-
+
+      - name: Bases de vulnerabilidades (clones superficiales; cve-check actualiza NVD)
+        run: |
+          if [ ! -d nvd/git/.git ]; then
+            git clone -q --depth 1 https://github.com/fkie-cad/nvd-json-data-feeds/ nvd/git
+          fi
+          if [ -d kernel-vulns/.git ]; then
+            git -C kernel-vulns pull -q --depth 1 || true
+          else
+            git clone -q --depth 1 https://git.kernel.org/pub/scm/linux/security/vulns.git kernel-vulns
+          fi
+
+      - name: Vulnerabilidades + VEX
+        run: make cve
+
+      - name: Informe en el resumen de la ejecución
+        if: always()
+        run: cat output/sbom/vulnerabilidades.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Pruebas (arranque y endurecimiento)
+        if: always()
         run: make test
 
       - name: Publicar artefactos
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cra-demo-images
@@ -51,3 +87,7 @@ jobs:
             output/images/u-boot.bin
             output/images/disk.img
             output/sbom/sbom.cdx.json
+            output/sbom/sbom-build.cdx.json
+            output/sbom/sbom-vuln.cdx.json
+            output/sbom/vex.cdx.json
+            output/sbom/vulnerabilidades.md
