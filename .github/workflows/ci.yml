@@ -37,6 +37,9 @@ jobs:
           key: ccache-${{ github.sha }}
           restore-keys: ccache-
 
+      - name: Documentación de cumplimiento (rutas y pruebas citadas existen)
+        run: make docs-check
+
       - name: Compilar
         run: make
 
@@ -74,7 +77,7 @@ jobs:
         if: always()
         run: cat output/sbom/vulnerabilidades.md >> "$GITHUB_STEP_SUMMARY" || true
 
-      - name: Pruebas (arranque, endurecimiento, arranque verificado y actualizaciones A/B)
+      - name: Pruebas (arranque, endurecimiento, arranque verificado, dm-verity, A/B y restablecimiento)
         if: always()
         run: |
           set -o pipefail

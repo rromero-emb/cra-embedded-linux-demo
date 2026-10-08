@@ -113,8 +113,8 @@ class Device:
         return "TIMEOUT", ""
 
 
-def slot_after_boot(vm, since, timeout=300):
-    ok = vm.wait_for(timeout=timeout, since=since)
+def slot_after_boot(vm, since, timeout=300, fail=None):
+    ok = vm.wait_for(timeout=timeout, since=since, **({} if fail is None else {"fail": fail}))
     m = re.findall(r"Slot activo\s*: ([AB])", vm.log[since:])
     return (m[-1] if (ok and m) else None)
 
@@ -156,7 +156,8 @@ try:
         dev.push(b_bad)
         st, _ = dev.wait_status("roto.raucb")
         check("paquete firmado pero roto -> instalado en A", st == "INSTALADO", st)
-        slot = slot_after_boot(vm, since, timeout=600)
+        # Aquí los pánicos del kernel son lo esperado (init roto): solo es fallo que U-Boot no encuentre slot
+        slot = slot_after_boot(vm, since, timeout=600, fail=("CRA: ARRANQUE RECHAZADO",))
         tail = vm.log[since:]
         attempts = len(re.findall(r"CRA: slot A", tail))
         check(f"init roto: {attempts} intentos en A y vuelta atrás automática a B", slot == "B" and attempts >= 3,

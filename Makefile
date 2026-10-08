@@ -1,11 +1,13 @@
 # Envoltorio de Buildroot para la demo CRA.
 #   make            -> descarga Buildroot (si falta), configura y compila
 #   make run        -> arranca la imagen en QEMU
-#   make test       -> pruebas automáticas (arranque, endurecimiento, arranque verificado, dm-verity y actualizaciones A/B)
+#   make test       -> pruebas automáticas (arranque, endurecimiento, arranque verificado, dm-verity,
+#                      actualizaciones A/B y restablecimiento de fábrica)
 #   make ssh        -> entra en el equipo arrancado con `make run` (usuario admin)
 #   make sbom       -> SBOM CycloneDX del producto y de compilación (output/sbom/)
 #   make cve        -> vulnerabilidades (NVD) + VEX + informe; falla si hay críticas sin analizar
 #   make br-<orden> -> orden directa de Buildroot (p. ej. br-uboot-dirclean)
+#   make docs-check -> comprueba que la documentación de cumplimiento cita ficheros y pruebas reales
 #   make hooks      -> activa el hook que impide subir claves privadas
 
 BR_VERSION   ?= 2025.02.18
@@ -18,7 +20,7 @@ export BR2_DL_DIR ?= $(TOP)/dl
 VERSION      := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 BR_MAKE      := $(MAKE) -C $(BR_DIR) O=$(O) BR2_EXTERNAL=$(TOP)/br2-external
 
-.PHONY: all keys buildroot config build menuconfig savedefconfig run test ssh sbom cve hooks clean distclean
+.PHONY: all keys buildroot config build menuconfig savedefconfig run test ssh sbom cve docs-check hooks clean distclean
 
 all: build
 
@@ -55,6 +57,7 @@ test:
 	python3 scripts/tests/test_verified_boot.py $(O)
 	python3 scripts/tests/test_verity.py $(O)
 	python3 scripts/tests/test_update.py $(O)
+	python3 scripts/tests/test_factory_reset.py $(O)
 
 ssh:
 	ssh -i keys/dev_ssh -p $${SSH_PORT:-2222} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null admin@localhost
@@ -84,6 +87,9 @@ cve: sbom
 	scripts/sbom/vuln-report.py $(SBOM_DIR)/sbom-vuln.cdx.json --fail-on $(FAIL_ON) \
 		--triage security/vex/triage.json --triage $(SBOM_DIR)/kernel-triage.json \
 		--vex-out $(SBOM_DIR)/vex.cdx.json --report-out $(SBOM_DIR)/vulnerabilidades.md
+
+docs-check:
+	python3 scripts/check-docs.py
 
 hooks:
 	git config core.hooksPath .githooks
