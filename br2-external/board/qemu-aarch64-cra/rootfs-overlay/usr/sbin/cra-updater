@@ -2,9 +2,15 @@
 # Agente de actualización (como haría un cliente OTA): instala los paquetes que aparecen en
 # /data/updates/incoming. Cualquiera con acceso puede dejarlos ahí: RAUC solo acepta los
 # firmados por la CA de actualizaciones, con dm-verity, compatibles y sin rollback.
+# También atiende la petición de restablecimiento de fábrica (factory-reset.request).
 IN=/data/updates/incoming
 STATUS=/data/updates/status
 while true; do
+	# Petición de restablecimiento de fábrica del operador (CRA Anexo I, 2(m))
+	if [ -f "$IN/factory-reset.request" ]; then
+		logger -t cra-updater "restablecimiento de fábrica solicitado"
+		/usr/sbin/cra-factory-reset --yes
+	fi
 	for b in "$IN"/*.raucb; do
 		[ -f "$b" ] || continue
 		name=$(basename "$b")

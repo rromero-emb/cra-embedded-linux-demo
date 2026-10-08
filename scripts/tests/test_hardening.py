@@ -116,7 +116,8 @@ print(f"[INFO] sin referencia a stack protector (normal si no usan buffers en pi
 kcfg = open(glob.glob(os.path.join(OUT, "build/linux-*/.config"))[0]).read()
 need = ["CONFIG_RANDOMIZE_BASE=y", "CONFIG_HARDENED_USERCOPY=y", "CONFIG_STRICT_KERNEL_RWX=y",
         "CONFIG_STACKPROTECTOR_STRONG=y", "CONFIG_SECURITY_DMESG_RESTRICT=y", "CONFIG_INIT_ON_ALLOC_DEFAULT_ON=y",
-        "# CONFIG_DEVMEM is not set", "# CONFIG_KEXEC is not set", "CONFIG_NF_TABLES=y", "CONFIG_SECURITY_YAMA=y"]
+        "# CONFIG_DEVMEM is not set", "# CONFIG_KEXEC is not set", "# CONFIG_PROC_KCORE is not set",
+        "# CONFIG_MAGIC_SYSRQ is not set", "CONFIG_NF_TABLES=y", "CONFIG_SECURITY_YAMA=y"]
 missing = [o for o in need if o not in kcfg]
 check("opciones de endurecimiento del kernel", not missing, missing)
 

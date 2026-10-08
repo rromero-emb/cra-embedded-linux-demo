@@ -14,7 +14,7 @@ Demostración reproducible de técnicas para cumplir requisitos técnicos del **
 | 4 | Arranque verificado: FIT firmado (RSA-4096), U-Boot bloqueado, 4 ataques probados | ✅ |
 | 5 | Actualizaciones A/B firmadas (RAUC, verity), anti-rollback y vuelta atrás automática | ✅ |
 | 6 | Raíz de solo lectura verificada con dm-verity (root hash firmado en el FIT) | ✅ |
-| 7 | Documentación de proceso (Anexo I, CVD, soporte) | ⏳ |
+| 7 | Restablecimiento de fábrica y documentación de cumplimiento (Anexo I, amenazas, CVD, soporte, art. 14) | ✅ |
 
 ## Uso rápido
 
@@ -24,9 +24,10 @@ Requisitos (Debian/Ubuntu): `build-essential rsync bc cpio unzip file wget libss
 make          # descarga Buildroot 2025.02.x (LTS) y compila
 make run      # arranca en QEMU (salir con Ctrl-a x)
 make ssh      # en otra terminal: entra como 'admin' con la clave de desarrollo
-make test     # arranque + endurecimiento + ataques al arranque + dm-verity + actualizaciones A/B
+make test     # arranque + endurecimiento + ataques al arranque + dm-verity + actualizaciones A/B + borrado
 make sbom     # SBOM CycloneDX del producto y de compilación en output/sbom/
 make cve      # vulnerabilidades + VEX + informe (falla si hay críticas sin analizar)
+make docs-check  # la documentación de cumplimiento cita ficheros y pruebas que existen
 make hooks    # impide hacer commit de claves privadas
 ```
 
@@ -128,6 +129,24 @@ U-Boot: lee el FIT en bruto → verifica la firma → extrae el root hash → dm
 - RAUC instala el slot completo (ext4 + hashes + FIT) como imagen en bruto, dentro de un paquete también verity.
 
 `make test` altera 1 byte de `/bin/busybox` en el slot A (sin tocar el FIT): dm-verity lo detecta y el equipo vuelve solo al slot B.
+
+## Restablecimiento de fábrica y documentación (sesión 7)
+
+- **Borrado seguro de datos** (Anexo I 2(m)): `touch /data/updates/incoming/factory-reset.request` → el equipo sobrescribe y reformatea `/data` (claves SSH, estado de RAUC, datos), devuelve el estado A/B al de fábrica y reinicia. `make test` comprueba que los datos desaparecen y que las claves de host SSH son nuevas.
+
+| Documento | Para qué |
+|---|---|
+| [`docs/annex-i-matrix.md`](docs/annex-i-matrix.md) | Cada requisito del Anexo I → implementación → prueba automática → estado (incluidos los parciales) |
+| [`docs/threat-model.md`](docs/threat-model.md) | Modelo de amenazas STRIDE: 20 amenazas, medida y prueba de cada una, riesgos aceptados |
+| [`SECURITY.md`](SECURITY.md) | Política de divulgación coordinada y canal de notificación |
+| [`docs/support-period.md`](docs/support-period.md) | Periodo de soporte (art. 13): fin de soporte de cada componente y plan de migración |
+| [`docs/incident-runbook.md`](docs/incident-runbook.md) | Notificación de vulnerabilidades explotadas e incidentes (art. 14: 24 h / 72 h / informe final) |
+| [`docs/user-information.md`](docs/user-information.md) | Modelo de información para el usuario (Anexo II) |
+| [`docs/vex/README.md`](docs/vex/README.md) | Cómo se decide si una CVE afecta y qué significa cada estado |
+
+`make docs-check` (también en CI) falla si la matriz deja algún punto sin cubrir o cita un fichero o una prueba que no existe: la documentación no puede quedarse atrás del código.
+
+**Lo que falta para un producto real** (detalle en la matriz): cifrado de `/data`, cliente OTA con descarga automática, registro persistente y remoto, contador anti-rollback en el arranque, borrado seguro propio de la memoria flash y la evaluación de riesgos del producto concreto.
 
 ## Base técnica
 

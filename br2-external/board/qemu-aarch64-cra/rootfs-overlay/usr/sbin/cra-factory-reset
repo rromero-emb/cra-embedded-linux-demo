@@ -1,0 +1,19 @@
+#!/bin/sh
+# Restablecimiento de fábrica (CRA Anexo I, parte I, 2(m)): elimina de forma permanente
+# todos los datos y ajustes del usuario.
+#  - /data (claves de host SSH, estado de RAUC, semilla, actualizaciones, datos): se sobrescribe
+#    la partición completa y se vuelve a formatear.
+#  - /bootstate: estado A/B de fábrica.
+# El sistema (slots A/B) es de solo lectura y está verificado: no contiene datos del usuario.
+set -eu
+[ "${1:-}" = "--yes" ] || { echo "Uso: $0 --yes  (borra TODOS los datos y ajustes)" >&2; exit 1; }
+logger -t cra-factory-reset "inicio del restablecimiento de fábrica"
+echo "CRA: restablecimiento de fábrica" > /dev/console
+sync
+umount -l /data
+shred -n 1 -z /dev/vda4
+mke2fs -q -L data /dev/vda4
+printf 'BOOT_ORDER=A B\nBOOT_A_LEFT=3\nBOOT_B_LEFT=3\n' > /bootstate/bootstate.txt
+sync
+echo "CRA: datos borrados, reiniciando" > /dev/console
+reboot -f
