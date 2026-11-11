@@ -61,7 +61,7 @@ make hooks    # blocks commits containing private keys
 
 How kernel CVEs are narrowed down to the ones that matter:
 
-| | Kernel 6.12.27 | Kernel 6.12.112 |
+| | Kernel 6.12.27 | Kernel 6.12.117 |
 |---|---|---|
 | CVEs reported by NVD | 3,201 | 360 |
 | Not affected: code not built (kernel CNA data + build `.o` files) | 2,531 | 169 |
@@ -157,7 +157,7 @@ U-Boot: reads the raw FIT → verifies the signature → extracts the root hash 
 ## Technical base
 
 - Buildroot **2025.02.x LTS** (supported until March 2028) as `BR2_EXTERNAL`
-- QEMU aarch64 `virt`, U-Boot 2026.07 as firmware, Linux kernel 6.12.112 (LTS)
+- QEMU aarch64 `virt`, U-Boot 2026.07 as firmware, Linux kernel 6.12.117 (LTS)
 - Bootlin external toolchain (glibc, stable)
 
 Full plan: [`docs/PLAN.md`](docs/PLAN.md)

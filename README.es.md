@@ -59,7 +59,7 @@ make hooks    # impide hacer commit de claves privadas
 
 Cómo se reducen las CVE del kernel a las que importan:
 
-| | Kernel 6.12.27 | Kernel 6.12.112 |
+| | Kernel 6.12.27 | Kernel 6.12.117 |
 |---|---|---|
 | CVE que reporta NVD | 3.201 | 360 |
 | No afectan: código no compilado (datos del kernel CNA + `.o` del build) | 2.531 | 169 |
@@ -153,7 +153,7 @@ U-Boot: lee el FIT en bruto → verifica la firma → extrae el root hash → dm
 ## Base técnica
 
 - Buildroot **2025.02.x LTS** (soporte hasta marzo de 2028) como `BR2_EXTERNAL`
-- QEMU aarch64 `virt`, U-Boot 2026.07 como firmware, kernel Linux 6.12.112 (LTS)
+- QEMU aarch64 `virt`, U-Boot 2026.07 como firmware, kernel Linux 6.12.117 (LTS)
 - Toolchain externa Bootlin (glibc, estable)
 
 Plan completo: [`docs/PLAN.md`](docs/PLAN.md)
