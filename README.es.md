@@ -59,17 +59,17 @@ make hooks    # impide hacer commit de claves privadas
 
 Cómo se reducen las CVE del kernel a las que importan:
 
-| | Kernel 6.12.27 | Kernel 6.12.117 |
-|---|---|---|
-| CVE que reporta NVD | 3.201 | 360 |
-| No afectan: código no compilado (datos del kernel CNA + `.o` del build) | 2.531 | 169 |
-| Corregidas en la versión / introducidas después | 67 | 140 |
-| **Abiertas tras el análisis** | **589** | **~50** |
+| | Kernel 6.12.27 | Kernel 6.12.112 (oct. 2026) | Kernel 6.12.117 (nov. 2026) |
+|---|---|---|---|
+| CVE que reporta NVD | 3.201 | 360 | 374 |
+| No afectan: código no compilado (datos del kernel CNA + `.o` del build) | 2.531 | 169 | 37 |
+| Corregidas en la versión / introducidas después | 67 | 140 | 307 |
+| **Abiertas tras el análisis** | **589** | **~50** | **28** |
 
 - Análisis automático del kernel: [`scripts/sbom/kernel-vex.py`](scripts/sbom/kernel-vex.py) con [linux/security/vulns.git](https://git.kernel.org/pub/scm/linux/security/vulns.git).
 - Análisis manual justificado: [`security/vex/triage.json`](security/vex/triage.json).
 - U-Boot actualizado a 2026.07 (firma GPG del mantenedor verificada) antes de confiar en la firma FIT: CVE-2026-46728 permitía saltársela en versiones anteriores a 2026.04. Pila de red de U-Boot eliminada.
-- CI semanal: vuelve a analizar aunque no cambie el código, porque aparecen CVE nuevas.
+- CI semanal: vuelve a analizar aunque no cambie el código, porque aparecen CVE nuevas. Si una ejecución programada falla, el CI abre una issue. Caso real: [`pilots/0001-cve-2026-64024/REPORT.md`](pilots/0001-cve-2026-64024/REPORT.md), una CVE crítica del kernel detectada sin cambiar código y corregida pasando a 6.12.117.
 
 ## Arranque verificado (sesión 4)
 

@@ -12,8 +12,11 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
+    permissions:
+      contents: read
+      issues: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -24,14 +27,14 @@ jobs:
             libssl-dev libgnutls28-dev python3 qemu-system-arm xxd
 
       - name: Caché de descargas
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: dl
           key: dl-${{ hashFiles('br2-external/configs/*_defconfig', 'Makefile') }}
           restore-keys: dl-
 
       - name: Caché de ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.buildroot-ccache
           key: ccache-${{ github.sha }}
@@ -51,7 +54,7 @@ jobs:
         run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
       - name: Caché de NVD y de las CVE del kernel
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             nvd
@@ -90,9 +93,26 @@ jobs:
             | grep -av "^\s*$" | tail -40 | sed 's/^/::error::/' || true
           tail -60 test.log | sed 's/^/::warning::/' || true
 
+      - name: Avisar si falla la vigilancia programada (abre o comenta una issue)
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create vigilancia-cve --color B60205 --description "Fallo de la vigilancia programada" --force
+          n=$(gh issue list --label vigilancia-cve --state open --json number --jq '.[0].number')
+          body="La ejecución programada ha fallado: $RUN_URL
+
+          Si es la puerta de CVE, el informe está en el resumen de la ejecución. Ver pilots/0001-cve-2026-64024/REPORT.md."
+          if [ -n "$n" ]; then
+            gh issue comment "$n" --body "$body"
+          else
+            gh issue create --label vigilancia-cve --title "Vigilancia programada fallida ($(date -u +%F))" --body "$body"
+          fi
+
       - name: Publicar artefactos
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cra-demo-images
           path: |

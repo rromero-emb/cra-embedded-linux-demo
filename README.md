@@ -61,17 +61,17 @@ make hooks    # blocks commits containing private keys
 
 How kernel CVEs are narrowed down to the ones that matter:
 
-| | Kernel 6.12.27 | Kernel 6.12.117 |
-|---|---|---|
-| CVEs reported by NVD | 3,201 | 360 |
-| Not affected: code not built (kernel CNA data + build `.o` files) | 2,531 | 169 |
-| Fixed in this version / introduced later | 67 | 140 |
-| **Open after analysis** | **589** | **~50** |
+| | Kernel 6.12.27 | Kernel 6.12.112 (Oct 2026) | Kernel 6.12.117 (Nov 2026) |
+|---|---|---|---|
+| CVEs reported by NVD | 3,201 | 360 | 374 |
+| Not affected: code not built (kernel CNA data + build `.o` files) | 2,531 | 169 | 37 |
+| Fixed in this version / introduced later | 67 | 140 | 307 |
+| **Open after analysis** | **589** | **~50** | **28** |
 
 - Automatic kernel analysis: [`scripts/sbom/kernel-vex.py`](scripts/sbom/kernel-vex.py) with [linux/security/vulns.git](https://git.kernel.org/pub/scm/linux/security/vulns.git).
 - Justified manual triage: [`security/vex/triage.json`](security/vex/triage.json).
 - U-Boot upgraded to 2026.07 (maintainer's GPG signature verified) before trusting FIT signatures: CVE-2026-46728 allowed bypassing them in versions before 2026.04. U-Boot network stack removed.
-- Weekly CI: re-scans even when the code does not change, because new CVEs keep appearing.
+- Weekly CI: re-scans even when the code does not change, because new CVEs keep appearing. If a scheduled run fails, CI opens an issue. Real case: [`pilots/0001-cve-2026-64024/REPORT.md`](pilots/0001-cve-2026-64024/REPORT.md), a critical kernel CVE caught with no code change and fixed by moving to 6.12.117.
 
 ## Verified boot (session 4)
 
