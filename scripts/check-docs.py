@@ -24,7 +24,7 @@ for n in range(1, 9):
 
 # Rutas del repo citadas (se ignoran las del equipo y las de output/, que se generan al compilar)
 PREFIXES = ("docs/", "scripts/", "security/", "br2-external/", ".github/", ".githooks/", "SECURITY.md")
-docs = glob.glob("docs/**/*.md", recursive=True) + ["SECURITY.md", "README.md"]
+docs = glob.glob("docs/**/*.md", recursive=True) + ["SECURITY.md", "README.md", "README.es.md"]
 for doc in docs:
     for ref in re.findall(r"`([^`\s]+)`", open(doc).read()):
         if ref.startswith(PREFIXES) and not os.path.exists(ref):
